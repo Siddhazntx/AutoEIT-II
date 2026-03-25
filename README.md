@@ -127,7 +127,7 @@ This allows the system to compare:
 ### 1. Clone the Repository
 
 ```bash
-git clone <YOUR-GITHUB-REPO-LINK-HERE>
+git clone https://github.com/Siddhazntx/AutoEIT-II
 cd AutoEit_2
 ```
 
