@@ -1,0 +1,29 @@
+# Python temporary and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+autoeit311/
+venv/
+env/
+.env
+
+# Data and Models (Keeps your repo lightweight and fast)
+data/raw/
+data/cache/
+data/processed/
+*.xlsx
+*.csv
+*.pt
+*.bin
+
+# AI Chat Logs and Drafts (Keep these private!)
+Text_files/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+Thumbs.db

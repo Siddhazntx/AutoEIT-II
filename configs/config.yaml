@@ -1,0 +1,104 @@
+# ==========================================
+# AutoEIT Pipeline Configuration
+# ==========================================
+
+project:
+  name: "AutoEIT_Spanish_Scoring"
+  version: "1.2.0"
+  seed: 42
+  debug: false
+
+# --- 1. File Paths ---
+paths:
+  raw_data_dir: "data/raw/"
+  processed_data_dir: "data/processed/"
+  cache_dir: "data/cache/"
+  logs_dir: "logs/"
+  output_results: "data/processed/final_scores.csv"
+
+# --- 2. Dataset & Evaluation ---
+dataset:
+  evaluation_strategy: "explicit_files"
+  tuning_set: "Example_EIT Transcription and Scoring Sheet.xlsx"
+  holdout_test_set: "AutoEIT Sample Transcriptions for Scoring.xlsx"
+  force_reload: false
+  allowed_score_range: [0, 4]
+
+evaluation:
+  primary_metric: "quadratic_weighted_kappa"
+  secondary_metrics:
+    - "accuracy"
+    - "f1_macro"
+  save_predictions: true
+  validation_size: 0.20
+  stratify_validation: true
+
+# --- 3. Preprocessing Rules ---
+preprocessing:
+  lowercase: true
+  remove_punctuation: true
+  normalize_accents: true
+
+  noise_tags_to_remove:
+    - "[pause]"
+    - "[cough]"
+    - "[laugh]"
+    - "[gibberish]"
+    - "[en inglés]"
+
+  gibberish_markers:
+    - "xxx"
+    - "xx"
+    - "x"
+
+# --- 4. Feature Toggles ---
+features:
+  use_lemma_overlap: true
+  use_sbert: true
+  use_nli: true
+  use_cross_encoder: false
+
+# --- 5. NLP Models ---
+models:
+  spacy_model: "es_core_news_lg"
+  bi_encoder: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  nli_model: "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+
+  device: "cpu"
+  batch_size: 8
+
+  caching:
+    enabled: true
+    cache_embeddings: true
+    cache_cross_encoder: false
+    cache_nli: false
+
+# --- 6. Scoring Engine ---
+scoring_engine:
+  weights:
+    nli_margin: 0.55
+    sbert_similarity: 0.30
+    lemma_recall: 0.15
+
+  normalize_scores: true
+  heuristic_thresholds: [0.20, 0.40, 0.60, 0.85]
+
+# --- 7. Threshold Optimization ---
+optimization:
+  method: "powell_qwk"
+  maxiter: 1000
+
+  bounds:
+    T1_min: 0.00
+    T1_max: 0.40
+    T2_min: 0.20
+    T2_max: 0.70
+    T3_min: 0.40
+    T3_max: 0.90
+    T4_min: 0.60
+    T4_max: 1.00
+
+# --- 8. Logging ---
+logging:
+  level: "INFO"
+  log_to_file: true
