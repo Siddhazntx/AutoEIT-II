@@ -17,6 +17,15 @@ The project is designed to be:
 The AutoEIT pipeline predicts scores on a **0–4 rubric scale**.
 Because the dataset is highly imbalanced (with a large majority of responses receiving score 4), model selection and evaluation are driven primarily by **Quadratic Weighted Kappa (QWK)** on a stratified validation split.
 
+## 📂 Data Architecture & Evaluation Strategy
+AutoEIT utilizes a two-pronged dataset approach to ensure robust performance in production. *(Note: Datasets are proprietary and omitted from this repository).*
+
+* **Historical Tuning Set (1,560 labeled rows, 29 participants):** This dataset exhibits a natural, real-world class imbalance (~75% of ground-truth scores are 4). 
+    * **Data Cleaning:** Participants 1, 2, and 3 were entirely dropped from this set due to missing transcriptions.
+    * **Weight Optimization:** This set is used strictly for deriving the Heuristic Engine's scoring weights via Grid Search.
+    * **Baseline Validation:** Establishing our **Quadratic Weighted Kappa (QWK) baseline of 0.8187**, calculated via stratified K-Fold cross-validation to account for class imbalance (indicating "almost perfect agreement" per Landis & Koch, 1977).
+* **Production Holdout Set (120 unlabeled rows, 4 participants):** The actual target inference environment. Because this data lacks ground truth, our **Training-Free Heuristic Engine** (Approach A) is deployed here. While the thresholds were tuned on historical data, the scoring engine itself relies purely on semantic rules rather than learned ordinal classifications.
+
 ### A/B Evaluation Results
 
 | Metric | Approach A (Heuristic Scorer) | Approach B (Ordinal ML) |
@@ -88,8 +97,9 @@ This is especially well aligned with EIT scoring, where the central question is 
 For ambiguous responses, extracted features are combined using a weighted mathematical scoring function:
 
 ```text
-Raw Score = w1 × NLI_margin + w2 × SBERT_similarity + w3 × Lemma_recall
+Raw Score = (0.55 × NLI_margin) + (0.30 × SBERT_similarity) + (0.15 × Lemma_recall)
 ```
+*Note: These specific weights were not arbitrarily chosen. They were determined via a Grid Search optimization process over the 1,560-row historical tuning set to maximize the Quadratic Weighted Kappa metric.*
 
 ### 7. QWK-Based Threshold Optimization
 Rather than manually guessing score boundaries, the system tunes the threshold cutoffs using **Powell optimization** to maximize **Quadratic Weighted Kappa (QWK)** on the training split.
@@ -118,6 +128,17 @@ This allows the system to compare:
 
 ---
 
+## 🚧 System Limitations & Handled Edge Cases
+
+**Known Limitations**
+* **Transcription Dependency:** The system evaluates text transcripts, not raw audio. The quality of the human/ASR transcription directly bounds the system's accuracy.
+* **Proficiency Bias:** Because the tuning dataset is heavily skewed toward high-proficiency learners, boundary detection between lower scores (0, 1, and 2) is weakly constrained.
+* **Language Specificity:** Currently validated exclusively for Spanish Elicited Imitation Tasks.
+
+**Handled Edge Cases**
+* **Non-Target Language & Gibberish:** Responses entirely in English (e.g., `[en inglés]`) or marked as gibberish (`xxx`) are caught by the Early Gate and automatically scored `0`.
+* **Transcription Artifacts:** Markers such as `[pause]`, `[laugh]`, and partial word attempts (e.g., `cor-`) are aggressively normalized prior to semantic evaluation to prevent false entailment scores.
+
 ## ⚙️ Installation
 
 ### Prerequisites
@@ -128,7 +149,7 @@ This allows the system to compare:
 
 ```bash
 git clone https://github.com/Siddhazntx/AutoEIT-II
-cd AutoEit_2
+cd AutoEit-II
 ```
 
 ### 2. Create and Activate a Virtual Environment
@@ -266,6 +287,3 @@ Modify this file to customize the pipeline behavior.
 ---
 
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
